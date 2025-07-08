@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiêu đề trang</title>
+    <style>
+        body {
+            background-color: #f2f3f5;
+        }
+        .header-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            left: 50%;
+            top: 60px;
+            transform: translateX(-50%);
+            background: none;
+            box-shadow: none;
+            border-radius: 0;
+            padding: 0;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        .header-box img {
+            width: 100px;
+            height: 100px;
+            margin-right: 12px;
+        }
+        .header-title {
+            display: none;
+        }
+        .login-container {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            width: 420px;
+            padding: 48px 40px 40px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin-top: 110px;
+        }
+        .login-note {
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            color: #888;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+        .login-welcome {
+            font-family: Arial, sans-serif;
+            font-size: 30px;
+            color: #111;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            background: #f2f3f5;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border: 1px solid #ccc;
+            padding: 0 10px;
+            box-sizing: border-box;
+        }
+        .input-group img {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+        }
+        .input-group input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            width: 100%;
+            padding: 10px 0;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 10px;
+            background: #264ECA;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 8px;
+            box-sizing: border-box;
+        }
+        .login-btn:hover {
+            background: #193a8c;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-box">
+        <img src="icon.png" alt="icon">
+    </div>
+    <div class="login-container" style="margin-top:30px;">
+        <div style="width:100%;">
+            <div class="login-note" style="text-align:left;">Please input your detail!</div>
+            <div class="login-welcome" style="text-align:left; margin-bottom: 35px;">Welcome Back</div>
+        </div>
+        <div class="input-group">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:20px;height:20px;margin-right:8px;min-width:20px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 0 1-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 0 0 1.183 1.981l6.478 3.488m8.839 2.51-4.66-2.51m0 0-1.023-.55a2.25 2.25 0 0 0-2.134 0l-1.022.55m0 0-4.661 2.51m16.5 1.615a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V8.844a2.25 2.25 0 0 1 1.183-1.981l7.5-4.039a2.25 2.25 0 0 1 2.134 0l7.5 4.039a2.25 2.25 0 0 1 1.183 1.98V19.5Z" />
+            </svg>
+            <input type="email" placeholder="Email" name="email">
+        </div>
+        <div class="input-group">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:20px;height:20px;margin-right:8px;min-width:20px;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+            <input type="password" placeholder="Password" name="password">
+        </div>
+        <button class="login-btn" type="button">Login</button>
+    </div>
+    <script>
+document.querySelector('.login-btn').onclick = async function() {
+    const email = document.querySelector('input[name="email"]').value;
+    const password = document.querySelector('input[name="password"]').value;
+    const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+    });
+    if (res.ok) {
+        const data = await res.json();
+        // Lưu thông tin user vào localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.location.href = data.redirect || '/main_screen/main_screen.html';
+    } else {
+        alert('Sai tài khoản hoặc mật khẩu!');
+    }
+};
+</script>
+</body>
+</html>

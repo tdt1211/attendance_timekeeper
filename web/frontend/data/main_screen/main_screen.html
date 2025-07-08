@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Screen - Dashboard Chấm Công</title>
+    <style>
+        body {
+            background: #f4f6fa;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .profile-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            padding: 32px 40px;
+            max-width: 480px;
+            margin: 40px auto 0 auto;
+        }
+        .profile-card img {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 32px;
+            background: #e0e0e0;
+        }
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .profile-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #222;
+            margin-bottom: 8px;
+        }
+        .profile-meta {
+            font-size: 16px;
+            color: #666;
+        }
+        .dashboard-container {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            max-width: 900px;
+            margin: 32px auto 0 auto;
+            padding: 32px 24px;
+        }
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .current-datetime {
+            font-size: 16px;
+            color: #111;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+        }
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .filter-group label {
+            font-size: 15px;
+            color: #333;
+        }
+        .filter-group select {
+            padding: 6px 12px;
+            font-size: 15px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: Arial, sans-serif;
+        }
+        .attendance-table th, .attendance-table td {
+            padding: 12px 8px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        .attendance-table th {
+            background: #f4f6fa;
+            color: #264ECA;
+            font-size: 16px;
+        }
+        .attendance-table td {
+            font-size: 15px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-card">
+        <img src="x.png" alt="Ảnh đại diện">
+        <div class="profile-info">
+            <div class="profile-name" id="profile-name">Họ và Tên</div>
+            <div class="profile-meta" id="profile-position">Chức vụ - Phòng ban</div>
+        </div>
+    </div>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <div id="current-datetime" class="current-datetime"></div>
+            <div class="filter-group">
+                <label for="department-filter">Phòng ban:</label>
+                <select id="department-filter">
+                    <option value="">Tất cả</option>
+                </select>
+            </div>
+        </div>
+        <table class="attendance-table">
+            <thead>
+                <tr>
+                    <th>Họ và tên</th>
+                    <th>Phòng ban</th>
+                    <th>Ngày đi làm</th>
+                    <th>Giờ vào</th>
+                    <th>Giờ ra</th>
+                    <th>Số phút trễ</th>
+                </tr>
+            </thead>
+            <tbody id="attendance-tbody">
+                <!-- Dữ liệu sẽ được render ở đây -->
+            </tbody>
+        </table>
+    </div>
+    <script>
+    window.onload = function() {
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) {
+            window.location.href = '/login_screen/index.html';
+            return;
+        }
+        document.getElementById('profile-name').textContent = user.name || '';
+        document.getElementById('profile-position').textContent = (user.position || '') + (user.department ? ' - ' + user.department : '');
+
+        // Hiển thị ngày giờ hiện tại
+        function updateDateTime() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('vi-VN');
+            const timeStr = now.toLocaleTimeString('vi-VN');
+            document.getElementById('current-datetime').textContent = `${dateStr} ${timeStr}`;
+        }
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+
+        // Lấy dữ liệu chấm công từ backend
+        let attendanceData = [];
+        fetch('/api/attendance')
+            .then(res => res.json())
+            .then(data => {
+                attendanceData = data;
+                renderAttendanceTable(attendanceData);
+                renderDepartmentFilter(attendanceData);
+            });
+
+        // Render bảng chấm công
+        function renderAttendanceTable(data) {
+            const tbody = document.getElementById('attendance-tbody');
+            tbody.innerHTML = '';
+            const department = document.getElementById('department-filter').value;
+            let totalLate = 0;
+            const filteredRows = data.filter(row => !department || row.department === department);
+            filteredRows.forEach(row => {
+                // Tính số phút trễ dựa trên checkin (so với 8:00)
+                let lateMinutes = 0;
+                if (row.checkin) {
+                    // Giả sử row.checkin là dạng "HH:mm"
+                    const [h, m] = row.checkin.split(':').map(Number);
+                    const checkinMinutes = h * 60 + m;
+                    const baseMinutes = 8 * 60; // 8:00
+                    lateMinutes = Math.max(0, checkinMinutes - baseMinutes);
+                }
+                totalLate += lateMinutes;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.name}</td>
+                    <td>${row.department}</td>
+                    <td>${row.date}</td>
+                    <td>${row.checkin}</td>
+                    <td>${row.checkout}</td>
+                    <td>${lateMinutes}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            // Thêm dòng tổng số phút trễ
+            const totalTr = document.createElement('tr');
+            totalTr.style.fontWeight = 'bold';
+            totalTr.innerHTML = `
+                <td colspan="5" style="text-align:right;">Tổng số phút trễ:</td>
+                <td>${totalLate}</td>
+            `;
+            tbody.appendChild(totalTr);
+        }
+
+        // Render filter phòng ban
+        function renderDepartmentFilter(data) {
+            const select = document.getElementById('department-filter');
+            const currentValue = select.value;
+            const departments = Array.from(new Set(data.map(row => row.department))).filter(Boolean);
+            select.innerHTML = '<option value="">Tất cả</option>' +
+                departments.map(dep => `<option value="${dep}">${dep}</option>`).join('');
+            // Giữ nguyên lựa chọn hiện tại nếu có
+            select.value = currentValue;
+        }
+
+        // Lọc theo phòng ban
+        document.getElementById('department-filter').addEventListener('change', function() {
+            renderAttendanceTable(attendanceData);
+            // Không gọi lại renderDepartmentFilter để tránh reset filter
+        });
+    };
+    </script>
+</body>
+</html>
